@@ -3,6 +3,7 @@
 // @namespace   NetSuite WG
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
+// @downloadURL https://github.com/Numuruzero/NS-CopyPasta/blob/main/NSUserscript.js
 // @include     *
 // @version     1
 // ==/UserScript==
