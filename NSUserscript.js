@@ -4,7 +4,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://github.com/Numuruzero/NS-CopyPasta/blob/main/NSUserscript.js
-// @include     *
+// @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
 // @version     1
 // ==/UserScript==
 
@@ -16,16 +16,25 @@ let tableItem = document.querySelector("#item_splits > tbody > tr:nth-child(2) >
 // Get the size of the order table
 // Content rows start at 2, accounting for header row
 // As of 4/19/24, total columns = 65
+// As of 4/22, building tester for columns as well
 let testRows;
+let testColumns;
 testRows = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-let i = 2
-let lastRow = 0
+testColumns = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
+let y = 2;
+let lastRow = 0;
+let lastColumn = 0;
 while (testRows) {
-    lastRow = i - 1;
-    testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${i}) > td:nth-child(1)`);
-    i++;
+    lastRow = y - 1;
+    testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${y}) > td:nth-child(1)`);
+    y++;
 }
-const lastColumn = 65;
+let x = 1;
+while (testColumns) {
+    lastColumn = x - 1;
+    testColumns = document.querySelector(`#item_splits > tbody > tr:nth-child(2) > td:nth-child(${x})`);
+    x++;
+}
 
 // Build an array out of the table
 const itemTable = [];
@@ -72,11 +81,39 @@ function copyTable() {
 }
 
 // Add button that copies some text to clipboard to the page
-const btn = document.createElement("button");
-btn.innerHTML = "Copy Item Table to Clipboard";
-btn.onclick = () => {
-    copyTable();
-    return false;
+const addCopyButton = () => {
+    const btn = document.createElement("button");
+    btn.innerHTML = "Copy Item Table to Clipboard";
+    btn.onclick = () => {
+      copyTable();
+      return false;
+    };
+  // Choose element to attach button to
+  document.querySelector(".uir_form_tab_container").before(btn);
 };
-// Choose element to attach button to
-document.querySelector(".uir_form_tab_container").before(btn);
+
+/*
+// Wait until field exists
+VM.observe(document.body, () => {
+  const node = document.querySelector(".uir_form_tab_container");
+  if (node) {
+    addCopyButton();
+    console.log('Good job');
+    return true;
+  } else {console.log('Nope')}
+});
+*/
+
+
+//Alternate method?
+const disconnect = VM.observe(document.body, () => {
+  // Find the target node
+  const node = document.querySelector(".uir_form_tab_container");
+
+  if (node) {
+    addCopyButton();
+
+    // disconnect observer
+    return true;
+  }
+});
