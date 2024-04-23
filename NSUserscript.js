@@ -5,73 +5,80 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://github.com/Numuruzero/NS-CopyPasta/blob/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1
+// @version     1.1
 // ==/UserScript==
 
 
 
-// Get a value from the page
-let tableItem = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-
-// Get the size of the order table
+// Get the size of the order's item table programmatically
 // Content rows start at 2, accounting for header row
-// As of 4/19/24, total columns = 65
-// As of 4/22, building tester for columns as well
-let testRows;
-let testColumns;
-testRows = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-testColumns = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-let y = 2;
-let lastRow = 0;
-let lastColumn = 0;
-while (testRows) {
+const getRowCount = () => {
+  let testRows;
+  let lastRow = 0;
+  let y = 2;
+  testRows = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
+  while (testRows) {
     lastRow = y - 1;
     testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${y}) > td:nth-child(1)`);
     y++;
+  }
+  return lastRow;
 }
-let x = 1;
-while (testColumns) {
+
+const getColumnCount = () => {
+  let testColumns;
+  let lastColumn = 0;
+  let x = 1;
+  testColumns = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
+  while (testColumns) {
     lastColumn = x - 1;
     testColumns = document.querySelector(`#item_splits > tbody > tr:nth-child(2) > td:nth-child(${x})`);
     x++;
+  }
+  return lastColumn;
 }
 
+
 // Build an array out of the table
-const itemTable = [];
-let currentRow = [];
-let row = 2;
-let column = 1;
-let aRow;
-while (row <= lastRow) {
-  currentRow = [];
-  while (column <= lastColumn) {
-    aRow = document.querySelector(`#item_splits > tbody > tr:nth-child(${row}) > td:nth-child(${column})`).innerText;
-    aRow = `"${aRow.replace(/[\n\r]/gm,' ').replace(/"/gm,'""')}"`
-    currentRow.push(aRow);
-    column++;
+// Newline/return replacement is commented out because surrounding elements with quotes eliminates the need to remove these
+const buildItemTable = () => {
+  const itemTable = [];
+  let currentRow = [];
+  let row = 2;
+  let column = 1;
+  let aRow;
+  while (row <= getRowCount()) {
+    currentRow = [];
+    while (column <= getColumnCount()) {
+      aRow = document.querySelector(`#item_splits > tbody > tr:nth-child(${row}) > td:nth-child(${column})`).innerText;
+      aRow = `"${aRow./*replace(/[\n\r]/gm,' ').*/replace(/"/gm,'""')}"`
+      currentRow.push(aRow);
+      column++;
     };
-  column = 1;
-  itemTable.push(currentRow);
-  row++
-};
+    column = 1;
+    itemTable.push(currentRow);
+    row++
+  };
+  return itemTable;
+}
 
 // Create and download CSV with some array
 // Potentially could use same method but join with tab character instead of comma in order to paste directly into sheet
 function downloadTable() {
-    let csvContent = "data:text/csv;charset=utf-8,";
+  let csvContent = "data:text/csv;charset=utf-8,";
+  let itemTable = buildItemTable();
+  itemTable.forEach(function(rowArray) {
+    let thisRow = rowArray.join(",");
+    csvContent += thisRow + "\r\n";
+  });
 
-    itemTable.forEach(function(rowArray) {
-        let thisRow = rowArray.join(",");
-        csvContent += thisRow + "\r\n";
-    });
-
-    var encodedUri = encodeURI(csvContent);
-    window.open(encodedUri);
+  var encodedUri = encodeURI(csvContent);
+  window.open(encodedUri);
 }
 
 function copyTable() {
     let copyContent = '';
-
+    let itemTable = buildItemTable();
     itemTable.forEach(function(rowArray) {
         let thisRow = rowArray.join("	");
         copyContent += thisRow + "\r\n";
