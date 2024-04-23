@@ -43,13 +43,15 @@ const getColumnCount = () => {
 // Newline/return replacement is commented out because surrounding elements with quotes eliminates the need to remove these
 const buildItemTable = () => {
   const itemTable = [];
+  const totalRows = getRowCount();
+  const totalColumns = getColumnCount();
   let currentRow = [];
   let row = 2;
   let column = 1;
   let aRow;
-  while (row <= getRowCount()) {
+  while (row <= totalRows) {
     currentRow = [];
-    while (column <= getColumnCount()) {
+    while (column <= totalColumns) {
       aRow = document.querySelector(`#item_splits > tbody > tr:nth-child(${row}) > td:nth-child(${column})`).innerText;
       aRow = `"${aRow./*replace(/[\n\r]/gm,' ').*/replace(/"/gm,'""')}"`
       currentRow.push(aRow);
@@ -63,7 +65,6 @@ const buildItemTable = () => {
 }
 
 // Create and download CSV with some array
-// Potentially could use same method but join with tab character instead of comma in order to paste directly into sheet
 function downloadTable() {
   let csvContent = "data:text/csv;charset=utf-8,";
   let itemTable = buildItemTable();
@@ -76,6 +77,7 @@ function downloadTable() {
   window.open(encodedUri);
 }
 
+// Same method but join with tab character instead of comma in order to paste directly into sheet
 function copyTable() {
     let copyContent = '';
     let itemTable = buildItemTable();
