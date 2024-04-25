@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://github.com/Numuruzero/NS-CopyPasta/blob/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.1
+// @version     1.2
 // ==/UserScript==
 
 
@@ -38,6 +38,41 @@ const getColumnCount = () => {
   return lastColumn;
 }
 
+// TODO?: Update innerText to textContent for better computational efficiency
+// TODO?: Update shipRates and estPallets to innerHTML.trim() and parse <br> to newlines for readability
+// Declaring variables for various info fields
+const orderInfo = {
+  shipAddress : document.querySelector("#shipaddress_fs_lbl_uir_label").nextElementSibling.innerText,
+  shipPhone : document.querySelector("#custbodyshipphonenumber_fs_lbl_uir_label").nextElementSibling.innerText,
+  email : document.querySelector("#custbody5_fs_lbl_uir_label").nextElementSibling.innerText,
+  shipMethod : document.querySelector("#shipmethod_fs_lbl_uir_label").nextElementSibling.innerText,
+  estPallets : document.querySelector("#custbody_freight_packages_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,""),
+  shipRates : document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,""),
+  estFreight : document.querySelector("#custbodyfreightquote_fs_lbl_uir_label").nextElementSibling.innerText,
+  estParcel : document.querySelector("#custbodyparcelquote_fs_lbl_uir_label").nextElementSibling.innerText,
+  recordNumber: document.querySelector("#main_form > table > tbody > tr:nth-child(1) > td > div > div.uir-page-title-secondline > div.uir-record-id").innerText
+};
+
+const infoValues = [orderInfo.shipAddress,orderInfo.shipPhone,orderInfo.email,orderInfo.shipMethod,orderInfo.estPallets,orderInfo.shipRates,orderInfo.recordNumber];
+const infoArray = infoValues.map((info) => `"${info}"`);
+
+/* Individual variables rather than an object
+const shipAddress = document.querySelector("#shipaddress_fs_lbl_uir_label").nextElementSibling.innerText;
+const shipPhone = document.querySelector("#custbodyshipphonenumber_fs_lbl_uir_label").nextElementSibling.innerText;
+const email = document.querySelector("#custbody5_fs_lbl_uir_label").nextElementSibling.innerText;
+const shipMethod = document.querySelector("#shipmethod_fs_lbl_uir_label").nextElementSibling.innerText;
+const estPallets = document.querySelector("#custbody_freight_packages_fs_lbl_uir_label").nextElementSibling.innerText;
+const shipRates = document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label").nextElementSibling.innerText;
+const estFreight = document.querySelector("#custbodyfreightquote_fs_lbl_uir_label").nextElementSibling.innerText;
+const estParcel = document.querySelector("#custbodyparcelquote_fs_lbl_uir_label").nextElementSibling.innerText;
+*/
+
+/* The estimated stock cost is loaded dynamically, would need to click() on the Billing tab to generate it in the first place (todo?)
+// Following variable returns null on Estimates
+if (document.querySelector("#recmachcustrecord_gp_sorow0 > td:nth-child(4)")) {
+  const dvEst = document.querySelector("#recmachcustrecord_gp_sorow0 > td:nth-child(4)").innerText;
+} else {console.log('Cannot get estimated stock cost on Estimate record')}
+*/
 
 // Build an array out of the table
 // Newline/return replacement is commented out because surrounding elements with quotes eliminates the need to remove these
@@ -89,12 +124,26 @@ function copyTable() {
     navigator.clipboard.writeText(copyContent);
 }
 
+function copyAll() {
+    let copyContent = '';
+    let itemTable = buildItemTable();
+    itemTable.push(['"Begin Order Info"']);
+    itemTable.push(['"Address"','"Phone Number"','"Email"','"Shipping Method"','"Estimated Pallets"','"Shipping Estimates"','"Order Number"']);
+    itemTable.push(infoArray);
+    itemTable.forEach(function(rowArray) {
+        let thisRow = rowArray.join("	");
+        copyContent += thisRow + "\r\n";
+    });
+
+    navigator.clipboard.writeText(copyContent);
+}
+
 // Add button that copies some text to clipboard to the page
 const addCopyButton = () => {
     const btn = document.createElement("button");
-    btn.innerHTML = "Copy Item Table to Clipboard";
+    btn.innerHTML = "Copy Order Info to Clipboard";
     btn.onclick = () => {
-      copyTable();
+      copyAll();
       return false;
     };
   // Choose element to attach button to
