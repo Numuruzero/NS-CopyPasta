@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        The ol' CSV-aroo
+// @name        NetSuite Order Info Hunter/Gatherer
 // @namespace   NetSuite WG
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
