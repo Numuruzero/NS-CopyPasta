@@ -10,6 +10,7 @@
 // @version     1.4
 // ==/UserScript==
 
+// This script can be installed/downloaded at https://greasyfork.org/en/scripts/493974-netsuite-order-info-hunter-gatherer
 
 
 // Get the size of the order's item table programmatically
