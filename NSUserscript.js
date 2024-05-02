@@ -1,6 +1,8 @@
 // ==UserScript==
 // @name        NetSuite Order Info Hunter/Gatherer
 // @namespace   NetSuite WG
+// @description A script to help copy order info to clipboard
+// @license MIT
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
