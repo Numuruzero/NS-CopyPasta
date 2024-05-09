@@ -1,16 +1,13 @@
 // ==UserScript==
-// @name        NetSuite Order Info Hunter/Gatherer
+// @name        The ol' CSV-aroo
 // @namespace   NetSuite WG
-// @description A script to help copy order info to clipboard
-// @license MIT
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.4
+// @version     1.5
 // ==/UserScript==
 
-// This script can be installed/downloaded at https://greasyfork.org/en/scripts/493974-netsuite-order-info-hunter-gatherer
 
 
 // Get the size of the order's item table programmatically
@@ -141,12 +138,78 @@ function copyAll() {
     navigator.clipboard.writeText(copyContent);
 }
 
-// Add button that copies some text to clipboard to the page
+// This function takes a specific array that contains all INET information
+function pasteAll(data) {
+  const inetInfo = data;
+  console.log (inetInfo);
+  document.querySelector("#custbody20").value+=inetInfo[0]
+  document.querySelector("#custbody_pacejet_delivery_instructions").value+=inetInfo[1]
+  document.querySelector("#custbody_shipaddressee").value=inetInfo[2]
+  document.querySelector("#custbody_shipattention").value=inetInfo[3]
+  document.querySelector("#custbody_shipaddress1").value=inetInfo[4]
+  document.querySelector("#custbody_shipaddress2").value=inetInfo[5]
+  document.querySelector("#custbody_shipcity").value=inetInfo[6]
+  document.querySelector("#custbody_shipstate").value=inetInfo[7]
+  document.querySelector("#custbody_shipzip").value=inetInfo[8]
+  document.querySelector("#custbody_shipphone").value=inetInfo[9]
+}
+
+// This function actually picks up data from the clipboard and uses it with above function
+async function pasteData() {
+  let inetInfo;
+  try {
+    const clipboardContents = await navigator.clipboard.read();
+    for (const item of clipboardContents) {
+      for (const mimeType of item.types) {
+        /* Commented code watches for image data and HTML text, respectively, but while this may be generally useful to recycle it is beyond the scope of this project
+        if (mimeType === "image/png") {
+          const pngImage = new Image(); // Image constructor
+          pngImage.src = "image1.png";
+          pngImage.alt = "PNG image from clipboard";
+          const blob = await item.getType("image/png");
+          pngImage.src = URL.createObjectURL(blob);
+          destinationDiv.appendChild(pngImage);
+        } else if (mimeType === "text/html") {
+          const blob = await item.getType("text/html");
+          const blobText = await blob.text();
+          const clipHTML = document.createElement("pre");
+          console.log(blobText);
+          destinationDiv.appendChild(clipHTML);
+
+        } else */if (mimeType === "text/plain") {
+          const blob = await item.getType("text/plain");
+          const blobText = await blob.text();
+          const blobArray = blobText.split('&+')
+          inetInfo = blobArray;
+          console.log(inetInfo);
+          pasteAll(inetInfo);
+        } else {
+          throw new Error(`${mimeType} not supported.`);
+        }
+      }
+    }
+  } catch (error) {
+  }
+}
+
+// Add button that copies some text to clipboard from the page
 const addCopyButton = () => {
     const btn = document.createElement("button");
     btn.innerHTML = "Copy Order Info to Clipboard";
     btn.onclick = () => {
       copyAll();
+      return false;
+    };
+  // Choose element to attach button to
+  document.querySelector(".uir_form_tab_container").before(btn);
+};
+
+// Add button that pastes INET info from clipboard; it will only appear in Edit mode
+const addPasteButton = () => {
+    const btn = document.createElement("button");
+    btn.innerHTML = "Paste INET Info to Order";
+    btn.onclick = () => {
+      pasteData();
       return false;
     };
   // Choose element to attach button to
@@ -170,9 +233,13 @@ VM.observe(document.body, () => {
 const disconnect = VM.observe(document.body, () => {
   // Find the target node
   const node = document.querySelector(".uir_form_tab_container");
+  const edCheck = new RegExp('e=T');
+  const url = window.location.href;
 
   if (node) {
-    addCopyButton();
+    if (edCheck.test(url)) {
+      addPasteButton();
+    } else { addCopyButton() };
 
     // disconnect observer
     return true;
