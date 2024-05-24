@@ -70,10 +70,25 @@ const disconnectFrame = VM.observe(document.body, () => {
     addShipIframe();
     setFrameVars();
 
+    //Method for iframe grabbin
+    const disconnectInner = VM.observe(frameDoc.body, () => {
+    // Find the target node
+    const node = frameDoc.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label");
+
+    if (node) {
+      console.log('The thing exists okay');
+
+      // disconnect observer
+      return true;
+      }
+    });
+
     // disconnect observer
     return true;
   }
 });
+
+
 
 // Declaring variables for frame method if necessary
 const frameInfo = {
