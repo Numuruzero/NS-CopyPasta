@@ -38,6 +38,53 @@ const getColumnCount = () => {
   return lastColumn;
 }
 
+// Add iframe for shipquote info since it has moved outside the scope of the SO/EST
+const addShipIframe = () => {
+  const shipFrame = document.createElement("iframe");
+  shipFrame.src = frameInfo.shipLink;
+  shipFrame.title = 'Shipquote Info';
+  shipFrame.id = 'ShipquoteFrame'
+  // Choose element to attach frame to
+  frameInfo.shipButton.after(shipFrame);
+}
+
+// Setting vars which will act as a document in place of the iframe
+let frameDoc;
+const setFrameVars = () => {
+  console.log('About to grab iframe')
+  const shipquoteFrame = document.getElementById('ShipquoteFrame');
+  if (!!document.getElementById('ShipquoteFrame')) { console.log('Frame exists') };
+  console.log('Grabbed iframe')
+  console.log('About to grab iframe document')
+  frameDoc = shipquoteFrame.contentDocument;
+  console.log('Grabbed iframe document')
+  console.log(frameDoc);
+}
+
+//Method for iframe
+const disconnectFrame = VM.observe(document.body, () => {
+  // Find the target node
+  const node = document.querySelector("#custbody_shipquote_val > a");
+
+  if (node) {
+    addShipIframe();
+    setFrameVars();
+
+    // disconnect observer
+    return true;
+  }
+});
+
+// Declaring variables for frame method if necessary
+const frameInfo = {
+  shipButton : document.querySelector("#custbody_shipquote_val > a") ? document.querySelector("#custbody_shipquote_val > a") : 'NA',
+  shipLink : document.querySelector("#custbody_shipquote_val > a") ? document.querySelector("#custbody_shipquote_val > a").href : 'NA',
+  shipRatesFrame : document.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label") ? document.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : 'NA',
+  estPalletsFrame : document.querySelector("#custrecord_sq_quoted_freight_pkg_fs_lbl_uir_label") ? document.querySelector("#custrecord_sq_quoted_freight_pkg_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : 'NA'
+}
+
+
+
 // Declaring variables for various info fields
 // BUT FIRST ERROR CATCHING
 const orderInfo = {
@@ -45,8 +92,8 @@ const orderInfo = {
   shipPhone : document.querySelector("#custbodyshipphonenumber_fs_lbl_uir_label") ? document.querySelector("#custbodyshipphonenumber_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
   email : document.querySelector("#custbody5_fs_lbl_uir_label") ? document.querySelector("#custbody5_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
   shipMethod : document.querySelector("#shipmethod_fs_lbl_uir_label") ? document.querySelector("#shipmethod_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
-  estPallets : document.querySelector("#custbody_freight_packages_fs_lbl_uir_label") ? document.querySelector("#custbody_freight_packages_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : 'NA',
-  shipRates : document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label") ? document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : 'NA',
+  estPallets : document.querySelector("#custbody_freight_packages_fs_lbl_uir_label") ? document.querySelector("#custbody_freight_packages_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : frameInfo.estPalletsFrame,
+  shipRates : document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label") ? document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : frameInfo.shipRatesFrame,
   estFreight : document.querySelector("#custbodyfreightquote_fs_lbl_uir_label") ? document.querySelector("#custbodyfreightquote_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
   estParcel : document.querySelector("#custbodyparcelquote_fs_lbl_uir_label") ? document.querySelector("#custbodyparcelquote_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
   recordNumber : document.querySelector("#main_form > table > tbody > tr:nth-child(1) > td > div > div.uir-page-title-secondline > div.uir-record-id") ? document.querySelector("#main_form > table > tbody > tr:nth-child(1) > td > div > div.uir-page-title-secondline > div.uir-record-id").innerText : 'NA',
@@ -194,12 +241,12 @@ async function pasteData() {
 
 // Add button that copies some text to clipboard from the page
 const addCopyButton = () => {
-    const btn = document.createElement("button");
-    btn.innerHTML = "Copy Order Info to Clipboard";
-    btn.onclick = () => {
-      copyAll();
-      return false;
-    };
+  const btn = document.createElement("button");
+  btn.innerHTML = "Copy Order Info to Clipboard";
+  btn.onclick = () => {
+    copyAll();
+    return false;
+  };
   // Choose element to attach button to
   document.querySelector(".uir_form_tab_container").before(btn);
 };
