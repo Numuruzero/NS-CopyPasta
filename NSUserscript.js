@@ -43,7 +43,8 @@ const addShipIframe = () => {
   const shipFrame = document.createElement("iframe");
   shipFrame.src = frameInfo.shipLink;
   shipFrame.title = 'Shipquote Info';
-  shipFrame.id = 'ShipquoteFrame'
+  shipFrame.id = 'ShipquoteFrame';
+  shipFrame.width = 800;
   // Choose element to attach frame to
   frameInfo.shipButton.after(shipFrame);
 }
@@ -61,6 +62,20 @@ const setFrameVars = () => {
   console.log(frameDoc);
 }
 
+const changeShipquoteInfo = () => {
+  try {
+    const tempShip = frameDoc.querySelector("#custrecord_sq_quoted_rates");
+    console.log(tempShip.value);
+    tempShip ? orderInfo.shipRates = frameDoc.querySelector("#custrecord_sq_quoted_rates").value.trim().replace(/<br>/g, '\r\n').replace(/<\/*[bu]>|/g, "") : console.log('Failed to get shipment estimates');
+    const tempPallets = frameDoc.querySelector("#main_form > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(4) > table > tbody > tr:nth-child(1) > td > div > span.uir-field.inputreadonly.uir-user-styled.uir-resizable");
+    console.log(tempPallets);
+    tempPallets ? orderInfo.estPallets = frameDoc.querySelector("#main_form > table > tbody > tr:nth-child(2) > td > table > tbody > tr > td:nth-child(4) > table > tbody > tr:nth-child(1) > td > div > span.uir-field.inputreadonly.uir-user-styled.uir-resizable").innerHTML.trim().replace(/<br>/g,'\r\n').replace(/<\/*[bu]>|/g,"") : console.log('Failed to get freight packages');
+  }
+  catch (error) {
+    console.log(error);
+  }
+}
+
 //Method for iframe
 const disconnectFrame = VM.observe(document.body, () => {
   // Find the target node
@@ -68,20 +83,6 @@ const disconnectFrame = VM.observe(document.body, () => {
 
   if (node) {
     addShipIframe();
-    setFrameVars();
-
-    //Method for iframe grabbin
-    const disconnectInner = VM.observe(frameDoc.body, () => {
-    // Find the target node
-    const node = frameDoc.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label");
-
-    if (node) {
-      console.log('The thing exists okay');
-
-      // disconnect observer
-      return true;
-      }
-    });
 
     // disconnect observer
     return true;
@@ -115,8 +116,7 @@ const orderInfo = {
   recordURL : window.location.href
 };
 
-const infoValues = [orderInfo.shipAddress,orderInfo.shipPhone,orderInfo.email,orderInfo.shipMethod,orderInfo.estPallets,orderInfo.shipRates,orderInfo.recordNumber,orderInfo.recordURL];
-const infoArray = infoValues.map((info) => `"${info}"`);
+
 
 /* Individual variables rather than an object
 const shipAddress = document.querySelector("#shipaddress_fs_lbl_uir_label").nextElementSibling.innerText;
@@ -189,6 +189,12 @@ function copyTable() {
 function copyAll() {
     let copyContent = '';
     let itemTable = buildItemTable();
+    if (!document.querySelector("#custbody_freight_packages_fs_lbl_uir_label")) {
+      setFrameVars();
+      changeShipquoteInfo();
+    }
+    const infoValues = [orderInfo.shipAddress,orderInfo.shipPhone,orderInfo.email,orderInfo.shipMethod,orderInfo.estPallets,orderInfo.shipRates,orderInfo.recordNumber,orderInfo.recordURL];
+    const infoArray = infoValues.map((info) => `"${info}"`);
     itemTable.push(['"Begin Order Info"']);
     itemTable.push(['"Address"','"Phone Number"','"Email"','"Shipping Method"','"Estimated Pallets"','"Shipping Estimates"','"Order Number"','"Order URL"']);
     itemTable.push(infoArray);
