@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.6
+// @version     1.7
 // ==/UserScript==
 
 
@@ -44,7 +44,10 @@ const addShipIframe = () => {
   shipFrame.src = frameInfo.shipLink;
   shipFrame.title = 'Shipquote Info';
   shipFrame.id = 'ShipquoteFrame';
-  shipFrame.width = 800;
+  shipFrame.style.width = '200px';
+  shipFrame.style.resize = 'both';
+  shipFrame.style.overflow = 'auto';
+
   // Choose element to attach frame to
   frameInfo.shipButton.after(shipFrame);
 }
