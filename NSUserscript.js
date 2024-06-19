@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name        The ol' CSV-aroo
-// @namespace   NetSuite WG
+// @name        NetSuite Copy/Paste Buttons
+// @namespace   jhutt.com
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
@@ -51,6 +51,9 @@ const addShipIframe = () => {
   // Choose element to attach frame to
   frameInfo.shipButton.after(shipFrame);
 }
+
+// Beginning implementation of iframe for GP info
+// document.querySelector("#ext-element-85 > table > tbody > tr:nth-child(5) > td > div > span.uir-field.inputreadonly.uir-user-styled.uir-resizable > a").onclick.toString().match(/https[:/.?=&\w]+/)
 
 // Setting vars which will act as a document in place of the iframe
 let frameDoc;
@@ -124,7 +127,7 @@ const estFreight = document.querySelector("#custbodyfreightquote_fs_lbl_uir_labe
 const estParcel = document.querySelector("#custbodyparcelquote_fs_lbl_uir_label").nextElementSibling.innerText;
 */
 
-/* The estimated stock cost is loaded dynamically, would need to click() on the Billing tab to generate it in the first place (todo?)
+/* The estimated stock cost is loaded dynamically, would need to click() on the Billing tab to generate it in the first place (or generate iframe) (todo?)
 // Following variable returns null on Estimates
 if (document.querySelector("#recmachcustrecord_gp_sorow0 > td:nth-child(4)")) {
   const dvEst = document.querySelector("#recmachcustrecord_gp_sorow0 > td:nth-child(4)").innerText;
@@ -217,7 +220,7 @@ function pasteAll(data) {
   document.querySelector("#custbody_shipphone").value=inetInfo[9]
 }
 
-// This function actually picks up data from the clipboard and uses it with above function
+// Pick up data from the clipboard and use it with above function
 async function pasteData() {
   let inetInfo;
   try {
