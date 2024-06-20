@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.7
+// @version     1.8
 // ==/UserScript==
 
 
@@ -208,7 +208,13 @@ function copyAll() {
 function pasteAll(data) {
   const inetInfo = data;
   console.log (inetInfo);
+  if (document.querySelector("#custbody20").value!=='') {
+    document.querySelector("#custbody20").value+='\n\n';
+  };
   document.querySelector("#custbody20").value+=inetInfo[0]
+  if (document.querySelector("#custbody_pacejet_delivery_instructions").value !== '') {
+    document.querySelector("#custbody_pacejet_delivery_instructions").value+='\n\n';
+  };
   document.querySelector("#custbody_pacejet_delivery_instructions").value+=inetInfo[1]
   document.querySelector("#custbody_shipaddressee").value=inetInfo[2]
   document.querySelector("#custbody_shipattention").value=inetInfo[3]
@@ -282,20 +288,8 @@ const addPasteButton = () => {
   document.querySelector(".uir_form_tab_container").before(btn);
 };
 
-/*
-// Wait until field exists
-VM.observe(document.body, () => {
-  const node = document.querySelector(".uir_form_tab_container");
-  if (node) {
-    addCopyButton();
-    console.log('Good job');
-    return true;
-  } else {console.log('Nope')}
-});
-*/
 
-
-//Alternate method?
+//Wait until document is sufficiently loaded, then inject button
 const disconnect = VM.observe(document.body, () => {
   // Find the target node
   const node = document.querySelector(".uir_form_tab_container");
