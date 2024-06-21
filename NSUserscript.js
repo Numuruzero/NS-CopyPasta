@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.8
+// @version     1.81
 // ==/UserScript==
 
 
@@ -264,6 +264,17 @@ async function pasteData() {
   }
 }
 
+// Adds Allegro info to order
+const allegroInfo = () => {
+  const allegroNote = 'ORDER FOR ALLEGRO DEL/INSTALL - PACK AND SET ASIDE, CONTACT whiteglove@upliftdesk.com WITH BOL FOR BOOKING';
+  const delIns = document.querySelector("#custbody_pacejet_delivery_instructions");
+  const prodMemo = document.querySelector("#custbody20")
+  if (prodMemo.value!=='') prodMemo.value+='\n\n';
+  prodMemo.value+=allegroNote;
+  if (delIns.value !== '') delIns.value += '\n\n';
+  delIns.value += allegroNote;
+};
+
 // Add button that copies some text to clipboard from the page
 const addCopyButton = () => {
   const btn = document.createElement("button");
@@ -276,18 +287,42 @@ const addCopyButton = () => {
   document.querySelector(".uir_form_tab_container").before(btn);
 };
 
+// Add button that puts Allegro notes on the order
+const createAllegroButton = () => {
+  const btn = document.createElement("button");
+  btn.innerHTML = "Add Allegro Notifier to Order";
+  btn.style.left = "10px";
+  btn.style.position = "relative";
+  btn.onclick = () => {
+    allegroInfo();
+    return false;
+  };
+  return btn;
+  // Choose element to attach button to
+  // document.querySelector(".uir_form_tab_container").after(btn);
+};
+
 // Add button that pastes INET info from clipboard; it will only appear in Edit mode
-const addPasteButton = () => {
+const createPasteButton = () => {
     const btn = document.createElement("button");
     btn.innerHTML = "Paste INET Info to Order";
     btn.onclick = () => {
       pasteData();
       return false;
     };
+  return btn;
   // Choose element to attach button to
-  document.querySelector(".uir_form_tab_container").before(btn);
+  // document.querySelector(".uir_form_tab_container").before(btn);
 };
 
+// Add buttons to edit page
+const addEditButtons = () => {
+  const allegroButton = createAllegroButton();
+  const inetPasteButton = createPasteButton();
+  document.querySelector(".uir_form_tab_container").before(inetPasteButton,allegroButton);
+};
+
+addEditButtons();
 
 //Wait until document is sufficiently loaded, then inject button
 const disconnect = VM.observe(document.body, () => {
@@ -299,7 +334,7 @@ const disconnect = VM.observe(document.body, () => {
   if (node) {
     if (edCheck.test(url)) {
       addPasteButton();
-    } else { addCopyButton() };
+    } else { addEditButtons() };
 
     // disconnect observer
     return true;
