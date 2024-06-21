@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.81
+// @version     1.82
 // ==/UserScript==
 
 
@@ -322,8 +322,6 @@ const addEditButtons = () => {
   document.querySelector(".uir_form_tab_container").before(inetPasteButton,allegroButton);
 };
 
-addEditButtons();
-
 //Wait until document is sufficiently loaded, then inject button
 const disconnect = VM.observe(document.body, () => {
   // Find the target node
@@ -333,8 +331,8 @@ const disconnect = VM.observe(document.body, () => {
 
   if (node) {
     if (edCheck.test(url)) {
-      addPasteButton();
-    } else { addEditButtons() };
+      addEditButtons();
+    } else { addCopyButton() };
 
     // disconnect observer
     return true;
