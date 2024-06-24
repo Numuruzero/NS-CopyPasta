@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.83
+// @version     1.84
 // ==/UserScript==
 
 
@@ -389,7 +389,7 @@ const addEditButtons = () => {
 // Check for custom flag conditions
 const checkFlags = () => {
   const boItems = catchBackorders();
-  if (boItems !== []) {
+  if (boItems.length !== 0) {
     flags.boPresent = true;
     flags.boItems = boItems;
     return boItems;
@@ -422,7 +422,7 @@ const itemcheck = VM.observe(document.body, () => {
   if (node) {
     if (isEd) {
       checkFlags();
-      if (flags.boPresent = true) document.querySelector("#hasbo").checked=true;
+      if (flags.boPresent === true) document.querySelector("#hasbo").checked=true;
     };
 
     // disconnect observer
