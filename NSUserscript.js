@@ -5,10 +5,21 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.82
+// @version     1.83
 // ==/UserScript==
 
 
+// Determine if the record is in edit mode
+const edCheck = new RegExp('e=T');
+const url = window.location.href;
+let isEd;
+edCheck.test(url) ? isEd = true : isEd = false;
+
+// Custom flags
+const flags = {
+  boPresent : false,
+  boItems : []
+}
 
 // Get the size of the order's item table programmatically
 // Content rows start at 2, accounting for header row
@@ -17,11 +28,21 @@ const getRowCount = () => {
   let lastRow = 0;
   let y = 2;
   testRows = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-  while (testRows) {
-    lastRow = y - 1;
-    testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${y}) > td:nth-child(1)`);
-    y++;
-  }
+  // The lines are written differently in edit mode, so we'll need to account for this while counting rows
+  if (isEd) {
+    y = 1;
+    while (testRows) {
+      lastRow = y;
+      testRows = document.querySelector(`#item_row_${y} > td:nth-child(1)`);
+      y++;
+    }
+  } else {
+      while (testRows) {
+        lastRow = y - 1;
+        testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${y}) > td:nth-child(1)`);
+        y++;
+      }
+    }
   return lastRow;
 }
 
@@ -159,6 +180,24 @@ const buildItemTable = () => {
   return itemTable;
 }
 
+// Checks the table for backordered items and returns a list of SKUs, if any
+function catchBackorders() {
+  if (document.querySelector("#item_headerrow > td:nth-child(15)").innerText !== 'BACK ORDERED') return 'NSA mucked it up, also make this automatic you lazy bum';
+  const totalRows = getRowCount();
+  let boItems = [];
+  let row = 1;
+  const boColumn = 15;
+  const skuColumn = 1;
+  let aRow;
+  while (row <= totalRows) {
+    // Non-inventory items have no number which returns null, check for a null count and replace with 0
+    aRow = document.querySelector(`#item_row_${row} > td:nth-child(${boColumn})`) ? document.querySelector(`#item_row_${row} > td:nth-child(${boColumn})`).innerText : 0;
+    if (Number(aRow) > 0) boItems.push(document.querySelector(`#item_row_${row} > td:nth-child(${skuColumn})`).innerText)
+    row++
+  };
+  return boItems;
+}
+
 // Create and download CSV with some array
 function downloadTable() {
   let csvContent = "data:text/csv;charset=utf-8,";
@@ -207,15 +246,20 @@ function copyAll() {
 // This function takes a specific array that contains all INET information
 function pasteAll(data) {
   const inetInfo = data;
-  console.log (inetInfo);
   if (document.querySelector("#custbody20").value!=='') {
     document.querySelector("#custbody20").value+='\n\n';
   };
   document.querySelector("#custbody20").value+=inetInfo[0]
+  if (document.querySelector("#hasbo").checked===true) {
+    document.querySelector("#custbody20").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+  };
   if (document.querySelector("#custbody_pacejet_delivery_instructions").value !== '') {
     document.querySelector("#custbody_pacejet_delivery_instructions").value+='\n\n';
   };
   document.querySelector("#custbody_pacejet_delivery_instructions").value+=inetInfo[1]
+  if (document.querySelector("#hasbo").checked===true) {
+    document.querySelector("#custbody_pacejet_delivery_instructions").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+  };
   document.querySelector("#custbody_shipaddressee").value=inetInfo[2]
   document.querySelector("#custbody_shipattention").value=inetInfo[3]
   document.querySelector("#custbody_shipaddress1").value=inetInfo[4]
@@ -253,7 +297,6 @@ async function pasteData() {
           const blobText = await blob.text();
           const blobArray = blobText.split('&+')
           inetInfo = blobArray;
-          console.log(inetInfo);
           pasteAll(inetInfo);
         } else {
           throw new Error(`${mimeType} not supported.`);
@@ -264,6 +307,21 @@ async function pasteData() {
   }
 }
 
+// Create a checkbox for determining if a backorder is present
+const addBackorderCheckbox = () => {
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.id = "hasbo";
+  chk.innerHTML = '<label for="hasbo">Order contains at least one backordered item</label>'
+  const chkp = document.createElement("p");
+  chkp.innerHTML = "WG: Check to add BO clause to info";
+  chkp.style.fontSize = "13px";
+  chkp.style.marginLeft = "5px";
+  chkp.style.display = "inline-block";
+  document.querySelector("#tr_fg_fieldGroup471 > td:nth-child(1) > table > tbody > tr:nth-child(5) > td > div").after(chk);
+  chk.after(chkp);
+}
+
 // Adds Allegro info to order
 const allegroInfo = () => {
   const allegroNote = 'ORDER FOR ALLEGRO DEL/INSTALL - PACK AND SET ASIDE, CONTACT whiteglove@upliftdesk.com WITH BOL FOR BOOKING';
@@ -271,8 +329,14 @@ const allegroInfo = () => {
   const prodMemo = document.querySelector("#custbody20")
   if (prodMemo.value!=='') prodMemo.value+='\n\n';
   prodMemo.value+=allegroNote;
+  if (document.querySelector("#hasbo").checked===true) {
+    prodMemo.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+  };
   if (delIns.value !== '') delIns.value += '\n\n';
   delIns.value += allegroNote;
+  if (document.querySelector("#hasbo").checked===true) {
+    delIns.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+  };
 };
 
 // Add button that copies some text to clipboard from the page
@@ -322,6 +386,16 @@ const addEditButtons = () => {
   document.querySelector(".uir_form_tab_container").before(inetPasteButton,allegroButton);
 };
 
+// Check for custom flag conditions
+const checkFlags = () => {
+  const boItems = catchBackorders();
+  if (boItems !== []) {
+    flags.boPresent = true;
+    flags.boItems = boItems;
+    return boItems;
+  }
+}
+
 //Wait until document is sufficiently loaded, then inject button
 const disconnect = VM.observe(document.body, () => {
   // Find the target node
@@ -332,7 +406,24 @@ const disconnect = VM.observe(document.body, () => {
   if (node) {
     if (edCheck.test(url)) {
       addEditButtons();
+      addBackorderCheckbox();
     } else { addCopyButton() };
+
+    // disconnect observer
+    return true;
+  }
+});
+
+//Wait until document is sufficiently loaded, check for custom flags
+const itemcheck = VM.observe(document.body, () => {
+  // Find the target node
+  const node = document.querySelector("#item_row_1 > td:nth-child(1)");
+
+  if (node) {
+    if (isEd) {
+      checkFlags();
+      if (flags.boPresent = true) document.querySelector("#hasbo").checked=true;
+    };
 
     // disconnect observer
     return true;
