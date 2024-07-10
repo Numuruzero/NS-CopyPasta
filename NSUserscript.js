@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.84
+// @version     1.85
 // ==/UserScript==
 
 
@@ -246,6 +246,7 @@ function copyAll() {
 // This function takes a specific array that contains all INET information
 function pasteAll(data) {
   const inetInfo = data;
+  checkFlags();
   if (document.querySelector("#custbody20").value!=='') {
     document.querySelector("#custbody20").value+='\n\n';
   };
@@ -324,6 +325,7 @@ const addBackorderCheckbox = () => {
 
 // Adds Allegro info to order
 const allegroInfo = () => {
+  checkFlags();
   const allegroNote = 'ORDER FOR ALLEGRO DEL/INSTALL - PACK AND SET ASIDE, CONTACT whiteglove@upliftdesk.com WITH BOL FOR BOOKING';
   const delIns = document.querySelector("#custbody_pacejet_delivery_instructions");
   const prodMemo = document.querySelector("#custbody20")
