@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.85
+// @version     1.86
 // ==/UserScript==
 
 
@@ -246,20 +246,21 @@ function copyAll() {
 // This function takes a specific array that contains all INET information
 function pasteAll(data) {
   const inetInfo = data;
+  const boJoin = flags.boItems.join(', ');
   checkFlags();
   if (document.querySelector("#custbody20").value!=='') {
     document.querySelector("#custbody20").value+='\n\n';
   };
   document.querySelector("#custbody20").value+=inetInfo[0]
   if (document.querySelector("#hasbo").checked===true) {
-    document.querySelector("#custbody20").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+    document.querySelector("#custbody20").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
   };
   if (document.querySelector("#custbody_pacejet_delivery_instructions").value !== '') {
     document.querySelector("#custbody_pacejet_delivery_instructions").value+='\n\n';
   };
   document.querySelector("#custbody_pacejet_delivery_instructions").value+=inetInfo[1]
   if (document.querySelector("#hasbo").checked===true) {
-    document.querySelector("#custbody_pacejet_delivery_instructions").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+    document.querySelector("#custbody_pacejet_delivery_instructions").value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
   };
   document.querySelector("#custbody_shipaddressee").value=inetInfo[2]
   document.querySelector("#custbody_shipattention").value=inetInfo[3]
@@ -270,6 +271,42 @@ function pasteAll(data) {
   document.querySelector("#custbody_shipzip").value=inetInfo[8]
   document.querySelector("#custbody_shipphone").value=inetInfo[9]
 }
+
+// Function to decide if items tab is loaded; if so, just perform above function, otherwise click the Items tab and perform VM await function
+const pasteBOCheck = (carrier) => {
+  if (document.querySelector("#item_row_1 > td:nth-child(1)")) {
+    switch (carrier) {
+      case "inet":
+        pasteData();
+        break;
+      case "allegro":
+        allegroInfo();
+        break;
+    }
+  } else {
+    document.querySelector("#itemstxt").click();
+    const waitForItems = VM.observe(document.body, () => {
+      // Find the target node
+      const node = document.querySelector("#item_row_1 > td:nth-child(1)");
+
+      if (node) {
+        if (isEd) {
+          switch (carrier) {
+            case "inet":
+              pasteData();
+              break;
+            case "allegro":
+              allegroInfo();
+              break;
+          };
+
+      // disconnect observer
+      return true;
+        }
+      }
+    });
+  };
+};
 
 // Pick up data from the clipboard and use it with above function
 async function pasteData() {
@@ -329,15 +366,16 @@ const allegroInfo = () => {
   const allegroNote = 'ORDER FOR ALLEGRO DEL/INSTALL - PACK AND SET ASIDE, CONTACT whiteglove@upliftdesk.com WITH BOL FOR BOOKING';
   const delIns = document.querySelector("#custbody_pacejet_delivery_instructions");
   const prodMemo = document.querySelector("#custbody20")
+  const boJoin = flags.boItems.join(', ');
   if (prodMemo.value!=='') prodMemo.value+='\n\n';
   prodMemo.value+=allegroNote;
   if (document.querySelector("#hasbo").checked===true) {
-    prodMemo.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+    prodMemo.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
   };
   if (delIns.value !== '') delIns.value += '\n\n';
   delIns.value += allegroNote;
   if (document.querySelector("#hasbo").checked===true) {
-    delIns.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${flags.boItems.join(', ')}) DIRECT TO CUSTOMER AS NORMAL.`;
+    delIns.value+=`\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
   };
 };
 
@@ -360,7 +398,7 @@ const createAllegroButton = () => {
   btn.style.left = "10px";
   btn.style.position = "relative";
   btn.onclick = () => {
-    allegroInfo();
+    pasteBOCheck("allegro");
     return false;
   };
   return btn;
@@ -373,7 +411,7 @@ const createPasteButton = () => {
     const btn = document.createElement("button");
     btn.innerHTML = "Paste INET Info to Order";
     btn.onclick = () => {
-      pasteData();
+      pasteBOCheck("inet");
       return false;
     };
   return btn;
