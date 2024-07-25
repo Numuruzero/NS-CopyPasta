@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.86
+// @version     1.87
 // ==/UserScript==
 
 
@@ -14,6 +14,11 @@ const edCheck = new RegExp('e=T');
 const url = window.location.href;
 let isEd;
 edCheck.test(url) ? isEd = true : isEd = false;
+
+// Determine if record is estimate
+const estCheck = new RegExp(/estimate\.nl/);
+let isEST;
+isEST = estCheck.test(url) ? true : false;
 
 // Custom flags
 const flags = {
@@ -444,9 +449,11 @@ const disconnect = VM.observe(document.body, () => {
   const url = window.location.href;
 
   if (node) {
-    if (edCheck.test(url)) {
+    if (isEd) {
       addEditButtons();
-      addBackorderCheckbox();
+      if (!isEST) {
+        addBackorderCheckbox();
+      }
     } else { addCopyButton() };
 
     // disconnect observer
@@ -460,7 +467,7 @@ const itemcheck = VM.observe(document.body, () => {
   const node = document.querySelector("#item_row_1 > td:nth-child(1)");
 
   if (node) {
-    if (isEd) {
+    if (isEd && !isEst) {
       checkFlags();
       if (flags.boPresent === true) document.querySelector("#hasbo").checked=true;
     };
