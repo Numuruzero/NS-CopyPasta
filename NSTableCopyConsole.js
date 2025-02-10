@@ -153,7 +153,7 @@ function copyAll() {
     itemTable.push(['"Address"', '"Phone Number"', '"Email"', '"Shipping Method"', '"Estimated Pallets"', '"Shipping Estimates"', '"Order Number"', '"Order URL"', '"Order Discount"', '"Ship Date"', '"Date Processed"', '"Created From"', '"WG Cost"', '"WG PO Number"']);
     itemTable.push(infoArray);
     itemTable.forEach(function (rowArray) {
-        let thisRow = rowArray.join("	");
+        let thisRow = rowArray.join(String.fromCharCode(9));
         copyContent += thisRow + "\r\n";
     });
 
