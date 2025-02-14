@@ -3,9 +3,9 @@
 // @namespace   jhutt.com
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
-// @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/main/NSUserscript.js
+// @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.871
+// @version     1.872
 // ==/UserScript==
 
 
