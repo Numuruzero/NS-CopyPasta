@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.873
+// @version     1.874
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -31,7 +31,7 @@ const itmCol = {
     set: false,
     itmSKU: "ITEM",
     boStatus: isEST ? "ESD (USED IN AUTOMATION)" : "STATUS",
-    numBO: isEST ? "BACK ORDERED" : "# BACKORDERED",
+    numBO: isEd ? "BACK ORDERED" : "# BACKORDERED",
     numPO: "CREATE PO",
     itmCost: "PRICE PER UNIT"
 };
@@ -193,7 +193,9 @@ const buildItemTable = () => {
             aRow = document.querySelector(`#item_splits > tbody > tr:nth-child(${row}) > td:nth-child(${column})`).innerText;
             aRow = `"${aRow./*replace(/[\n\r]/gm,' ').*/replace(/"/gm, '""')}"`
             currentRow.push(aRow);
-            if (!itmCol.set) checkItemHeader(document.querySelector(`#item_splits > tbody > tr.uir-machine-headerrow > td:nth-child(${column})`).innerText, column - 1);
+            if (!itmCol.set) {
+              checkItemHeader(document.querySelector(`#item_splits > tbody > tr.uir-machine-headerrow > td:nth-child(${column})`).textContent.toUpperCase(), column - 1);
+            }
             column++;
         };
         column = 1;
@@ -475,6 +477,9 @@ const itemcheck = VM.observe(document.body, () => {
 
     if (node) {
         if (isEd && !isEST) {
+          if (!itmCol.set) {
+            buildItemTable();
+          }
             checkFlags();
             if (flags.boPresent === true) document.querySelector("#hasbo").checked = true;
         };
