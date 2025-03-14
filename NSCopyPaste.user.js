@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.874
+// @version     1.875
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -194,7 +194,7 @@ const buildItemTable = () => {
             aRow = `"${aRow./*replace(/[\n\r]/gm,' ').*/replace(/"/gm, '""')}"`
             currentRow.push(aRow);
             if (!itmCol.set) {
-              checkItemHeader(document.querySelector(`#item_splits > tbody > tr.uir-machine-headerrow > td:nth-child(${column})`).textContent.toUpperCase(), column - 1);
+                checkItemHeader(document.querySelector(`#item_splits > tbody > tr.uir-machine-headerrow > td:nth-child(${column})`).textContent.toUpperCase(), column - 1);
             }
             column++;
         };
@@ -227,17 +227,20 @@ function getWGLine(table) {
         return ["NA", "NA"];
     }
     const WGSearch = new RegExp(/WG-/);
-    const WGInfo = [];
+    let WGInfo = ["NA", "NA"];
     table.forEach((line) => {
         if (WGSearch.exec(line[0])) {
-            if (Number(line[itmCol.itmCost].slice(1, -1)) > 0) {
-                WGInfo.push((line[itmCol.itmCost].slice(1, -1)));
+            // It's a bit cooked to add to the itmCost to get to total, but will work until we add the total column to the itmCol object
+            if (Number(line[itmCol.itmCost + 2].slice(1, -1).replaceAll(",", "")) > 0) {
+                WGInfo[0] = line[itmCol.itmCost + 2].slice(1, -1);
             }
             if (line[itmCol.numPO].includes("PO")) {
-                WGInfo.push((line[itmCol.numPO].slice(1, -1).trim()));
+                WGInfo[1] = line[itmCol.numPO].slice(1, -1).trim();
             }
         };
     })
+    console.log(WGInfo[0]);
+    console.log(WGInfo[1]);
     return WGInfo;
 }
 
@@ -276,32 +279,31 @@ function copyAll() {
 
 // This function takes a specific array that contains all INET information and pastes it onto the order
 function pasteAll(data) {
-    buildItemTable();
-    const inetInfo = data;
-    const boJoin = flags.boItems.join(', ');
-    checkFlags();
+    // Removing function that builds BO info on script, it is better handled on the ROC doc
+    // buildItemTable();
+    let insInfo;
+    try {
+        insInfo = JSON.parse(data);
+    } catch (error) {
+        console.log(error);
+    }
+    // checkFlags();
     if (document.querySelector("#custbody20").value !== '') {
         document.querySelector("#custbody20").value += '\n\n';
     };
-    document.querySelector("#custbody20").value += inetInfo[0]
-    if (document.querySelector("#hasbo").checked === true) {
-        document.querySelector("#custbody20").value += `\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
-    };
+    document.querySelector("#custbody20").value += insInfo.prodMem;
     if (document.querySelector("#custbody_pacejet_delivery_instructions").value !== '') {
         document.querySelector("#custbody_pacejet_delivery_instructions").value += '\n\n';
     };
-    document.querySelector("#custbody_pacejet_delivery_instructions").value += inetInfo[1]
-    if (document.querySelector("#hasbo").checked === true) {
-        document.querySelector("#custbody_pacejet_delivery_instructions").value += `\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
-    };
-    document.querySelector("#custbody_shipaddressee").value = inetInfo[2]
-    document.querySelector("#custbody_shipattention").value = inetInfo[3]
-    document.querySelector("#custbody_shipaddress1").value = inetInfo[4]
-    document.querySelector("#custbody_shipaddress2").value = inetInfo[5]
-    document.querySelector("#custbody_shipcity").value = inetInfo[6]
-    document.querySelector("#custbody_shipstate").value = inetInfo[7]
-    document.querySelector("#custbody_shipzip").value = inetInfo[8]
-    document.querySelector("#custbody_shipphone").value = inetInfo[9]
+    document.querySelector("#custbody_pacejet_delivery_instructions").value += insInfo.delIns;
+    document.querySelector("#custbody_shipaddressee").value = insInfo.compName;
+    document.querySelector("#custbody_shipattention").value = insInfo.custName;
+    document.querySelector("#custbody_shipaddress1").value = insInfo.add1;
+    document.querySelector("#custbody_shipaddress2").value = insInfo.add2;
+    document.querySelector("#custbody_shipcity").value = insInfo.city;
+    document.querySelector("#custbody_shipstate").value = insInfo.state;
+    document.querySelector("#custbody_shipzip").value = insInfo.zip;
+    document.querySelector("#custbody_shipphone").value = insInfo.phone;
 }
 
 // Function to decide if items tab is loaded; if so, just perform above function, otherwise click the Items tab and perform VM await function
@@ -310,9 +312,6 @@ const pasteBOCheck = (carrier) => {
         switch (carrier) {
             case "inet":
                 pasteData();
-                break;
-            case "allegro":
-                allegroInfo();
                 break;
         }
     } else {
@@ -326,9 +325,6 @@ const pasteBOCheck = (carrier) => {
                     switch (carrier) {
                         case "inet":
                             pasteData();
-                            break;
-                        case "allegro":
-                            allegroInfo();
                             break;
                     };
                 }
@@ -349,8 +345,7 @@ async function pasteData() {
                 if (mimeType === "text/plain") {
                     const blob = await item.getType("text/plain");
                     const blobText = await blob.text();
-                    const blobArray = blobText.split('&+')
-                    inetInfo = blobArray;
+                    inetInfo = blobText;
                     pasteAll(inetInfo);
                 } else {
                     throw new Error(`${mimeType} not supported.`);
@@ -376,25 +371,6 @@ const addBackorderCheckbox = () => {
     chk.after(chkp);
 }
 
-// Adds Allegro info to order
-const allegroInfo = () => {
-    checkFlags();
-    const allegroNote = 'ORDER FOR ALLEGRO DEL/INSTALL - PACK AND SET ASIDE, CONTACT whiteglove@upliftdesk.com WITH BOL FOR BOOKING';
-    const delIns = document.querySelector("#custbody_pacejet_delivery_instructions");
-    const prodMemo = document.querySelector("#custbody20");
-    const boJoin = flags.boItems.join(', ');
-    if (prodMemo.value !== '') prodMemo.value += '\n\n';
-    prodMemo.value += allegroNote;
-    if (document.querySelector("#hasbo").checked === true) {
-        prodMemo.value += `\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
-    };
-    if (delIns.value !== '') delIns.value += '\n\n';
-    delIns.value += allegroNote;
-    if (document.querySelector("#hasbo").checked === true) {
-        delIns.value += `\n\nWHEN AVAILABLE, SEND BACKORDERED ITEMS (${boJoin}) DIRECT TO CUSTOMER AS NORMAL.`;
-    };
-};
-
 // Add button that copies some text to clipboard from the page
 const addCopyButton = () => {
     const btn = document.createElement("button");
@@ -407,25 +383,10 @@ const addCopyButton = () => {
     document.querySelector(".uir_form_tab_container").before(btn);
 };
 
-// Add button that puts Allegro notes on the order
-const createAllegroButton = () => {
-    const btn = document.createElement("button");
-    btn.innerHTML = "Add Allegro Notifier to Order";
-    btn.style.left = "10px";
-    btn.style.position = "relative";
-    btn.onclick = () => {
-        pasteBOCheck("allegro");
-        return false;
-    };
-    return btn;
-    // Choose element to attach button to
-    // document.querySelector(".uir_form_tab_container").after(btn);
-};
-
 // Add button that pastes INET info from clipboard; it will only appear in Edit mode
 const createPasteButton = () => {
     const btn = document.createElement("button");
-    btn.innerHTML = "Paste INET Info to Order";
+    btn.innerHTML = "Paste Installer Info to Order";
     btn.onclick = () => {
         pasteBOCheck("inet");
         return false;
@@ -437,9 +398,8 @@ const createPasteButton = () => {
 
 // Add buttons to edit page
 const addEditButtons = () => {
-    const allegroButton = createAllegroButton();
     const inetPasteButton = createPasteButton();
-    document.querySelector(".uir_form_tab_container").before(inetPasteButton, allegroButton);
+    document.querySelector(".uir_form_tab_container").before(inetPasteButton);
 };
 
 // Check for custom flag conditions
@@ -477,9 +437,9 @@ const itemcheck = VM.observe(document.body, () => {
 
     if (node) {
         if (isEd && !isEST) {
-          if (!itmCol.set) {
-            buildItemTable();
-          }
+            if (!itmCol.set) {
+                buildItemTable();
+            }
             checkFlags();
             if (flags.boPresent === true) document.querySelector("#hasbo").checked = true;
         };
