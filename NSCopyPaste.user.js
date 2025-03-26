@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.875
+// @version     1.876
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -169,7 +169,7 @@ const orderInfo = {
     shipRates: document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label") ? document.querySelector("#custbody_quoted_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g, '\r\n').replace(/<\/*[bu]>|/g, "") : frameInfo.shipRatesFrame,
     estFreight: document.querySelector("#custbodyfreightquote_fs_lbl_uir_label") ? document.querySelector("#custbodyfreightquote_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
     estParcel: document.querySelector("#custbodyparcelquote_fs_lbl_uir_label") ? document.querySelector("#custbodyparcelquote_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
-    recordNumber: document.querySelector("#main_form > table > tbody > tr:nth-child(1) > td > div > div.uir-page-title-secondline > div.uir-record-id") ? document.querySelector("#main_form > table > tbody > tr:nth-child(1) > td > div > div.uir-page-title-secondline > div.uir-record-id").innerText : 'NA',
+    recordNumber: document.querySelector("#tranid_fs_lbl_uir_label") ? document.querySelector("#tranid_fs_lbl_uir_label").nextElementSibling.innerText : 'NA',
     recordURL: window.location.href,
     orderDiscount: document.querySelector("#discountrate_fs_lbl_uir_label") ? document.querySelector("#discountrate_fs_lbl_uir_label").nextElementSibling.textContent.trim() : 'NA',
     shipDate: document.querySelector("#custbody57_fs_lbl_uir_label") ? document.querySelector("#custbody57_fs_lbl_uir_label").nextElementSibling.textContent.trim() : 'NA',
