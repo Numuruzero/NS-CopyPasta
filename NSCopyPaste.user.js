@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.876
+// @version     1.877
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -25,6 +25,25 @@ const flags = {
     boItems: []
 }
 
+////////////////////////////// Begin XML grab test //////////////////////////////
+// First some new code based on the below code which does not require the X2JS library, but returns a new Document instead of a JSON object
+// Not as elegant, but it serves our purposes and should be usable in browser console
+// https://goessner.net/download/prj/jsonxml/
+// https://www.xml.com/pub/a/2006/05/31/converting-between-xml-and-json.html
+
+async function grabXML() {
+    const response = await fetch(`${url}&xml=T`);
+    const data = await response.text();
+    const parser = new DOMParser();
+    // console.log(data);
+
+    const parsedDoc = parser.parseFromString(data, "text/xml");
+    const xmlString = new XMLSerializer().serializeToString(parsedDoc);
+    console.log(parsedDoc);
+    console.log(parsedDoc.getElementsByTagName("billaddress")[0].textContent);
+}
+
+////////////////////////////// End XML grab test //////////////////////////////
 ////////////////////////////// Begin table grab //////////////////////////////
 
 const itmCol = {
@@ -265,7 +284,7 @@ function copyAll() {
         changeShipquoteInfo();
     }
     const infoValues = [orderInfo.shipAddress, orderInfo.shipPhone, orderInfo.email, orderInfo.shipMethod, orderInfo.estPallets, orderInfo.shipRates, orderInfo.recordNumber, orderInfo.recordURL, orderInfo.orderDiscount, orderInfo.shipDate, orderInfo.dateProcessed, orderInfo.createdFrom, WGInfo[0], WGInfo[1]];
-    const infoArray = infoValues.map((info) => `"${info}"`);
+    const infoArray = infoValues.map((info) => `"${info.replace(/"/gm, '""')}"`);
     itemTable.push(['"Begin Order Info"']);
     itemTable.push(['"Address"', '"Phone Number"', '"Email"', '"Shipping Method"', '"Estimated Pallets"', '"Shipping Estimates"', '"Order Number"', '"Order URL"', '"Order Discount"', '"Ship Date"', '"Date Processed"', '"Created From"', '"WG Cost"', '"WG PO Number"']);
     itemTable.push(infoArray);
@@ -418,6 +437,7 @@ const disconnect = VM.observe(document.body, () => {
     const node = document.querySelector(".uir_form_tab_container");
 
     if (node) {
+        grabXML();
         if (isEd) {
             addEditButtons();
             if (!isEST) {
