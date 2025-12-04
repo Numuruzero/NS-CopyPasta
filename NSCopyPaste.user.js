@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name        NetSuite Copy/Paste Buttons
+// @name        NetSuite Copy and Paste Buttons
 // @namespace   jhutt.com
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/salesord.nl*
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.877
+// @version     1.9
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -25,13 +25,16 @@ const flags = {
     boItems: []
 }
 
+// Bookmarklet check
+const context = "userscript";
+
 ////////////////////////////// Begin XML grab test //////////////////////////////
 // First some new code based on the below code which does not require the X2JS library, but returns a new Document instead of a JSON object
 // Not as elegant, but it serves our purposes and should be usable in browser console
+// Editing out while not in use, but keeping for future reference
 // https://goessner.net/download/prj/jsonxml/
 // https://www.xml.com/pub/a/2006/05/31/converting-between-xml-and-json.html
-
-async function grabXML() {
+/*async function grabXML() {
     const response = await fetch(`${url}&xml=T`);
     const data = await response.text();
     const parser = new DOMParser();
@@ -41,10 +44,26 @@ async function grabXML() {
     const xmlString = new XMLSerializer().serializeToString(parsedDoc);
     console.log(parsedDoc);
     console.log(parsedDoc.getElementsByTagName("billaddress")[0].textContent);
-}
+}*/
 
 ////////////////////////////// End XML grab test //////////////////////////////
 ////////////////////////////// Begin table grab //////////////////////////////
+
+// New simpler function to capture table data as 2D array
+// Does not care if the table is in edit mode or not, but may return empty rows if in edit mode
+function captureTableData(tableElement) {
+    const rows = tableElement.querySelectorAll("tr");
+    const data = [];
+    rows.forEach(row => {
+        const cols = row.querySelectorAll("td,th");
+        const rowData = [];
+        cols.forEach(col => {
+            rowData.push(col.innerText.trim());
+        });
+        data.push(rowData);
+    });
+    return data;
+}
 
 const itmCol = {
     set: false,
@@ -52,71 +71,12 @@ const itmCol = {
     boStatus: isEST ? "ESD (USED IN AUTOMATION)" : "STATUS",
     numBO: isEd ? "BACK ORDERED" : "# BACKORDERED",
     numPO: "CREATE PO",
+    total: "TOTAL",
     itmCost: "PRICE PER UNIT"
 };
 
-// Get the size of the order's item table programmatically
-// Content rows start at 2, accounting for header row
-const getRowCount = () => {
-    let testRows;
-    let lastRow = 0;
-    let y = 2;
-    testRows = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-    // The lines are written differently in edit mode, so we'll need to account for this while counting rows
-    if (isEd) {
-        y = 1;
-        while (testRows) {
-            lastRow = y;
-            testRows = document.querySelector(`#item_row_${y} > td:nth-child(1)`);
-            y++;
-        }
-    } else {
-        while (testRows) {
-            lastRow = y - 1;
-            testRows = document.querySelector(`#item_splits > tbody > tr:nth-child(${y}) > td:nth-child(1)`);
-            y++;
-        }
-    }
-    return lastRow;
-}
-
-const getColumnCount = () => {
-    let testColumns;
-    let lastColumn = 0;
-    let x = 1;
-    testColumns = document.querySelector("#item_splits > tbody > tr:nth-child(2) > td:nth-child(1)");
-    while (testColumns) {
-        lastColumn = x - 1;
-        testColumns = document.querySelector(`#item_splits > tbody > tr:nth-child(2) > td:nth-child(${x})`);
-        x++;
-    }
-    return lastColumn;
-}
-
-/**
- * Checks a text to see if it matches a column header, and sets according to the given number
- */
-const checkItemHeader = (check, num) => {
-    switch (check) {
-        case itmCol.itmSKU:
-            itmCol.itmSKU = num;
-            break;
-        case itmCol.numBO:
-            itmCol.numBO = num;
-            break;
-        case itmCol.boStatus:
-            itmCol.boStatus = num;
-            break;
-        case itmCol.numPO:
-            itmCol.numPO = num;
-            break;
-        case itmCol.itmCost:
-            itmCol.itmCost = num;
-            break;
-    }
-}
-
 // Add iframe for shipquote info since it has moved outside the scope of the SO/EST
+// With the removal of Allegro this is not necessary, strictly speaking, but is useful outside of this script
 const addShipIframe = () => {
     const shipFrame = document.createElement("iframe");
     // Add &l=T to URL which loads the page without the navbar
@@ -130,9 +90,6 @@ const addShipIframe = () => {
     // Choose element to attach frame to
     frameInfo.shipButton.after(shipFrame);
 }
-
-// Beginning implementation of iframe for GP info
-// document.querySelector("#ext-element-85 > table > tbody > tr:nth-child(5) > td > div > span.uir-field.inputreadonly.uir-user-styled.uir-resizable > a").onclick.toString().match(/https[:/.?=&\w]+/)
 
 // Setting vars which will act as a document in place of the iframe
 let frameDoc;
@@ -154,27 +111,30 @@ const changeShipquoteInfo = () => {
     }
 }
 
-// Method for iframe
-const disconnectFrame = VM.observe(document.body, () => {
-    // Find the target node
-    const node = document.querySelector("#custbody_shipquote_val > a");
-
-    if (node) {
-        addShipIframe();
-
-        // disconnect observer
-        return true;
-    }
-});
-
-
-
 // Declaring variables as NA for frame method if necessary
 const frameInfo = {
     shipButton: document.querySelector("#custbody_shipquote_val > a") ? document.querySelector("#custbody_shipquote_val > a") : 'NA',
     shipLink: document.querySelector("#custbody_shipquote_val > a") ? document.querySelector("#custbody_shipquote_val > a").href : 'NA',
     shipRatesFrame: document.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label") ? document.querySelector("#custrecord_sq_quoted_parcel_rates_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g, '\r\n').replace(/<\/*[bu]>|/g, "") : 'NA',
     estPalletsFrame: document.querySelector("#custrecord_sq_quoted_freight_pkg_fs_lbl_uir_label") ? document.querySelector("#custrecord_sq_quoted_freight_pkg_fs_lbl_uir_label").nextElementSibling.innerHTML.trim().replace(/<br>/g, '\r\n').replace(/<\/*[bu]>|/g, "") : 'NA'
+}
+
+if (context === "userscript") {
+    // Method for iframe
+    const disconnectFrame = VM.observe(document.body, () => {
+        // Find the target node
+        const node = document.querySelector("#custbody_shipquote_val > a");
+
+        if (node) {
+            addShipIframe();
+
+            // disconnect observer
+            return true;
+        }
+    });
+} else {
+    // Bookmarklet method, create frame immediately
+    addShipIframe();
 }
 
 // Declaring variables for various info fields
@@ -197,51 +157,21 @@ const orderInfo = {
 };
 
 // Build an array out of the table
-// Newline/return replacement is commented out because surrounding elements with quotes eliminates the need to remove these
+// Quotation marks added around each entry to handle commas and newlines, quotes escaped by doubling
 const buildItemTable = () => {
-    const itemTable = [];
-    const totalRows = getRowCount();
-    const totalColumns = getColumnCount();
-    let currentRow = [];
-    let row = 2;
-    let column = 1;
-    let aRow;
-    while (row <= totalRows) {
-        currentRow = [];
-        while (column <= totalColumns) {
-            aRow = document.querySelector(`#item_splits > tbody > tr:nth-child(${row}) > td:nth-child(${column})`).innerText;
-            aRow = `"${aRow./*replace(/[\n\r]/gm,' ').*/replace(/"/gm, '""')}"`
-            currentRow.push(aRow);
-            if (!itmCol.set) {
-                checkItemHeader(document.querySelector(`#item_splits > tbody > tr.uir-machine-headerrow > td:nth-child(${column})`).textContent.toUpperCase(), column - 1);
-            }
-            column++;
-        };
-        column = 1;
-        itmCol.set = true;
-        itemTable.push(currentRow);
-        row++
-    };
-    return itemTable;
-}
+    const itemTable = captureTableData(document.querySelector("#item_splits"));
+    for (key in itmCol) {
+        const hdrIndex = itemTable[0].indexOf(itmCol[key]);
+        itmCol[key] = hdrIndex;
+    }
 
-// Checks the table for backordered items and returns a list of SKUs, if any
-function catchBackorders() {
-    if (!itmCol.numBO) return 'NSA mucked it up, also make this automatic you lazy bum';
-    const totalRows = getRowCount();
-    let boItems = [];
-    let row = 1;
-    let aRow;
-    while (row <= totalRows) {
-        // Non-inventory items have no number which returns null, check for a null count and replace with 0
-        aRow = document.querySelector(`#item_row_${row} > td:nth-child(${itmCol.numBO})`) ? document.querySelector(`#item_row_${row} > td:nth-child(${itmCol.numBO})`).innerText : 0;
-        if (Number(aRow) > 0) boItems.push(document.querySelector(`#item_row_${row} > td:nth-child(${itmCol.itmSKU})`).innerText)
-        row++
-    };
-    return boItems;
+    const parsedTable = itemTable.map(row => row.map(col => `"${col.replace(/"/gm, '""')}"`));
+    parsedTable.shift(); // Remove header row after column indices are found
+    return parsedTable;
 }
 
 function getWGLine(table) {
+    // If the PO column is not found, return NA values
     if (typeof itmCol.numPO != "number") {
         return ["NA", "NA"];
     }
@@ -250,7 +180,8 @@ function getWGLine(table) {
     table.forEach((line) => {
         if (WGSearch.exec(line[0])) {
             // It's a bit cooked to add to the itmCost to get to total, but will work until we add the total column to the itmCol object
-            if (Number(line[itmCol.itmCost + 2].slice(1, -1).replaceAll(",", "")) > 0) {
+
+            if (Number(line[itmCol.total].slice(1, -1).replaceAll(",", "")) > 0) {
                 WGInfo[0] = line[itmCol.itmCost + 2].slice(1, -1);
             }
             if (line[itmCol.numPO].includes("PO")) {
@@ -258,8 +189,7 @@ function getWGLine(table) {
             }
         };
     })
-    console.log(WGInfo[0]);
-    console.log(WGInfo[1]);
+
     return WGInfo;
 }
 
@@ -306,7 +236,6 @@ function pasteAll(data) {
     } catch (error) {
         console.log(error);
     }
-    // checkFlags();
     if (document.querySelector("#custbody20").value !== '') {
         document.querySelector("#custbody20").value += '\n\n';
     };
@@ -324,35 +253,6 @@ function pasteAll(data) {
     document.querySelector("#custbody_shipzip").value = insInfo.zip;
     document.querySelector("#custbody_shipphone").value = insInfo.phone;
 }
-
-// Function to decide if items tab is loaded; if so, just perform above function, otherwise click the Items tab and perform VM await function
-const pasteBOCheck = (carrier) => {
-    if (document.querySelector("#item_row_1 > td:nth-child(1)")) {
-        switch (carrier) {
-            case "inet":
-                pasteData();
-                break;
-        }
-    } else {
-        document.querySelector("#itemstxt").click();
-        const waitForItems = VM.observe(document.body, () => {
-            // Find the target node
-            const node = document.querySelector("#item_row_1 > td:nth-child(1)");
-
-            if (node) {
-                if (isEd) {
-                    switch (carrier) {
-                        case "inet":
-                            pasteData();
-                            break;
-                    };
-                }
-                // disconnect observer
-                return true;
-            }
-        });
-    };
-};
 
 // Pick up data from the clipboard and use it with above function
 async function pasteData() {
@@ -375,21 +275,6 @@ async function pasteData() {
     }
 }
 
-// Create a checkbox for determining if a backorder is present
-const addBackorderCheckbox = () => {
-    const chk = document.createElement("input");
-    chk.type = "checkbox";
-    chk.id = "hasbo";
-    chk.innerHTML = '<label for="hasbo">Order contains at least one backordered item</label>'
-    const chkp = document.createElement("p");
-    chkp.innerHTML = "WG: Check to add BO clause to info";
-    chkp.style.fontSize = "13px";
-    chkp.style.marginLeft = "5px";
-    chkp.style.display = "inline-block";
-    document.querySelector("#tr_fg_fieldGroup471 > td:nth-child(1) > table > tbody > tr:nth-child(5) > td > div").after(chk);
-    chk.after(chkp);
-}
-
 // Add button that copies some text to clipboard from the page
 const addCopyButton = () => {
     const btn = document.createElement("button");
@@ -403,68 +288,37 @@ const addCopyButton = () => {
 };
 
 // Add button that pastes INET info from clipboard; it will only appear in Edit mode
-const createPasteButton = () => {
+const addPasteButton = () => {
     const btn = document.createElement("button");
     btn.innerHTML = "Paste Installer Info to Order";
     btn.onclick = () => {
-        pasteBOCheck("inet");
+        pasteData();
         return false;
     };
-    return btn;
+    // return btn;
     // Choose element to attach button to
-    // document.querySelector(".uir_form_tab_container").before(btn);
+    document.querySelector(".uir_form_tab_container").before(btn);
 };
 
-// Add buttons to edit page
-const addEditButtons = () => {
-    const inetPasteButton = createPasteButton();
-    document.querySelector(".uir_form_tab_container").before(inetPasteButton);
-};
+if (context === "userscript") {
+    //Wait until document is sufficiently loaded, then inject button
+    const disconnect = VM.observe(document.body, () => {
+        // Find the target node
+        const node = document.querySelector(".uir_form_tab_container");
 
-// Check for custom flag conditions
-const checkFlags = () => {
-    const boItems = catchBackorders();
-    if (boItems.length !== 0) {
-        flags.boPresent = true;
-        flags.boItems = boItems;
-        return boItems;
-    }
+        if (node) {
+            // grabXML();
+            if (isEd) {
+                addPasteButton();
+            } else { addCopyButton() };
+
+            // disconnect observer
+            return true;
+        }
+    });
+} else {
+    // Bookmarklet method, create buttons immediately
+    if (isEd) {
+        addPasteButton();
+    } else { addCopyButton() }
 }
-
-//Wait until document is sufficiently loaded, then inject button
-const disconnect = VM.observe(document.body, () => {
-    // Find the target node
-    const node = document.querySelector(".uir_form_tab_container");
-
-    if (node) {
-        grabXML();
-        if (isEd) {
-            addEditButtons();
-            if (!isEST) {
-                addBackorderCheckbox();
-            }
-        } else { addCopyButton() };
-
-        // disconnect observer
-        return true;
-    }
-});
-
-//Wait until document is sufficiently loaded, check for custom flags
-const itemcheck = VM.observe(document.body, () => {
-    // Find the target node
-    const node = document.querySelector("#item_row_1 > td:nth-child(1)");
-
-    if (node) {
-        if (isEd && !isEST) {
-            if (!itmCol.set) {
-                buildItemTable();
-            }
-            checkFlags();
-            if (flags.boPresent === true) document.querySelector("#hasbo").checked = true;
-        };
-
-        // disconnect observer
-        return true;
-    }
-});
