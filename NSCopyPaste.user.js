@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.9
+// @version     1.901
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -184,7 +184,7 @@ function getWGLine(table) {
             if (Number(line[itmCol.total].slice(1, -1).replaceAll(",", "")) > 0) {
                 WGInfo[0] = line[itmCol.itmCost + 2].slice(1, -1);
             }
-            if (line[itmCol.numPO].includes("PO")) {
+            if (line[itmCol.numPO]?.includes("PO")) {
                 WGInfo[1] = line[itmCol.numPO].slice(1, -1).trim();
             }
         };
