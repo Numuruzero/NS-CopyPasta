@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.901
+// @version     1.902
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -181,7 +181,7 @@ function getWGLine(table) {
         if (WGSearch.exec(line[0])) {
             // It's a bit cooked to add to the itmCost to get to total, but will work until we add the total column to the itmCol object
 
-            if (Number(line[itmCol.total].slice(1, -1).replaceAll(",", "")) > 0) {
+            if (Number(line[itmCol.total]?.slice(1, -1).replaceAll(",", "")) > 0) {
                 WGInfo[0] = line[itmCol.itmCost + 2].slice(1, -1);
             }
             if (line[itmCol.numPO]?.includes("PO")) {
