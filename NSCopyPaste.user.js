@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.902
+// @version     1.903
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -166,7 +166,7 @@ const buildItemTable = () => {
     }
 
     const parsedTable = itemTable.map(row => row.map(col => `"${col.replace(/"/gm, '""')}"`));
-    parsedTable.shift(); // Remove header row after column indices are found
+    // parsedTable.shift(); // Remove header row after column indices are found
     return parsedTable;
 }
 
