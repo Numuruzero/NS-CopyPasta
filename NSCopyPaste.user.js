@@ -26,7 +26,8 @@ const flags = {
 }
 
 // Bookmarklet check
-const context = "userscript";
+let context;
+typeof GM !== 'undefined' ? context = "userscript" : context = "bookmarklet";
 
 ////////////////////////////// Begin XML grab test //////////////////////////////
 // First some new code based on the below code which does not require the X2JS library, but returns a new Document instead of a JSON object
