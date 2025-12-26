@@ -5,7 +5,7 @@
 // @match       https://1206578.app.netsuite.com/app/accounting/transactions/estimate.nl*
 // @downloadURL https://raw.githubusercontent.com/Numuruzero/NS-CopyPasta/refs/heads/main/NSCopyPaste.user.js
 // @require     https://cdn.jsdelivr.net/npm/@violentmonkey/dom@2
-// @version     1.903
+// @version     1.904
 // ==/UserScript==
 
 ////////////////////////////// Universal Check Vars //////////////////////////////
@@ -161,9 +161,18 @@ const orderInfo = {
 // Quotation marks added around each entry to handle commas and newlines, quotes escaped by doubling
 const buildItemTable = () => {
     const itemTable = captureTableData(document.querySelector("#item_splits"));
-    for (key in itmCol) {
-        const hdrIndex = itemTable[0].indexOf(itmCol[key]);
-        itmCol[key] = hdrIndex;
+    // Make sure headers are in uppercase (NS inconsistently uses sentence case)
+    itemTable[0] = itemTable[0].map(header => header.toUpperCase().trim());
+    if (!itmCol.set) {
+        for (key in itmCol) {
+            const hdrIndex = itemTable[0].indexOf(itmCol[key]);
+            if (hdrIndex != -1) {
+                itmCol[key] = hdrIndex;
+            } else {
+                console.log(`Header ${key} not found`)
+            }
+            itmCol.set = true;
+        }
     }
 
     const parsedTable = itemTable.map(row => row.map(col => `"${col.replace(/"/gm, '""')}"`));
